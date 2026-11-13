@@ -34,6 +34,9 @@ import { UploadsModule } from './uploads/uploads.module.js';
 import { UsersModule } from './users/users.module.js';
 import { VerificationsModule } from './verifications/verifications.module.js';
 import { VolunteersModule } from './volunteers/volunteers.module.js';
+import { MatchingModule } from './matching/matching.module.js';
+import { UrgencyModule } from './urgency/urgency.module.js';
+import { RouteOptimizationModule } from './route-optimization/route.module.js';
 
 @Module({
   imports: [
@@ -93,6 +96,9 @@ import { VolunteersModule } from './volunteers/volunteers.module.js';
     UploadsModule,
     AuthModule,
     HealthModule,
+    MatchingModule,
+    UrgencyModule,
+    RouteOptimizationModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
