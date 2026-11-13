@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid())
+  name              String
+  email             String?   @unique
+  phone             String?   @unique
+  password_hash     String
+  status            String    @default("ACTIVE") // ACTIVE / SUSPENDED / DELETED
+  email_verified_at DateTime?
+  phone_verified_at DateTime?
+  last_login_at     DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+}
+
+model Organization {
+  id                  String   @id @default(uuid())
+  type                String   // RESTAURANT / NGO / BAKERY / CATERER
+  name                String
+  description         String?
+  email               String?
+  phone               String
+  registration_number String?
+  registered_address  String?
+  latitude            Decimal?
+  longitude           Decimal?
+  is_hidden           Boolean  @default(false)
+  beneficiary_count   Int?
+  serving_capacity    Int?
+  verification_status String   @default("PENDING") // PENDING / VERIFIED / REJECTED
+  is_active           Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  members             OrganizationMember[]
+}
+
+model OrganizationMember {
+  id              String   @id @default(uuid())
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id])
+  user_id         String
+  role            String   // OWNER / ADMIN / STAFF
+  status          String   @default("INVITED") // ACTIVE / INVITED / REMOVED
+  created_at      DateTime @default(now())
+}
+
+model Delivery {
+  id                 String    @id @default(uuid())
+  donation_claim_id  String    @unique
+  volunteer_id       String?
+  status             String    @default("PENDING") // PENDING / ASSIGNED / ACCEPTED / PICKED_UP / DELIVERED / CANCELLED
+  assigned_at        DateTime?
+  accepted_at        DateTime?
+  picked_up_at       DateTime?
+  delivered_at       DateTime?
+  pickup_code_hash   String?
+  delivery_code_hash String?
+  failure_reason     String?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+}
