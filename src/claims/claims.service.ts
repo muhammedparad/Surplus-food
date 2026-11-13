@@ -99,7 +99,7 @@ export class ClaimsService {
       where: { id: donationId },
       include: {
         claims: {
-          where: { status: ClaimStatus.APPROVED },
+          where: { status: { in: [ClaimStatus.APPROVED, ClaimStatus.COMPLETED] } },
           select: { approvedQuantity: true },
         },
       },
@@ -133,35 +133,18 @@ export class ClaimsService {
       );
     }
 
-    const existingClaim = await this.prisma.donationClaim.findFirst({
+    const activeClaim = await this.prisma.donationClaim.findFirst({
       where: {
         donationId,
         ngoId: dto.ngoId,
+        status: { in: [ClaimStatus.PENDING, ClaimStatus.APPROVED] },
       },
     });
 
-    if (existingClaim) {
-      if (
-        existingClaim.status === ClaimStatus.PENDING ||
-        existingClaim.status === ClaimStatus.APPROVED
-      ) {
-        throw new ConflictException(
-          `Your NGO already has an active claim on this donation (status: ${existingClaim.status})`,
-        );
-      }
-
-      return this.prisma.donationClaim.update({
-        where: { id: existingClaim.id },
-        data: {
-          requestedQuantity: dto.requestedQuantity,
-          pickupMode: dto.pickupMode ?? PickupMode.VOLUNTEER,
-          status: ClaimStatus.PENDING,
-          requestedAt: new Date(),
-          reviewedAt: null,
-          reviewedById: null,
-          rejectionReason: null,
-        },
-      });
+    if (activeClaim) {
+      throw new ConflictException(
+        `Your NGO already has an active claim on this donation (status: ${activeClaim.status})`,
+      );
     }
 
     return this.prisma.donationClaim.create({
@@ -216,7 +199,7 @@ export class ClaimsService {
       const allApproved = await tx.donationClaim.findMany({
         where: {
           donationId: claim.donationId,
-          status: ClaimStatus.APPROVED,
+          status: { in: [ClaimStatus.APPROVED, ClaimStatus.COMPLETED] },
         },
         select: { approvedQuantity: true },
       });

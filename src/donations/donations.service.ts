@@ -217,7 +217,7 @@ export class DonationsService {
             },
           },
           claims: {
-            where: { status: ClaimStatus.APPROVED },
+            where: { status: { in: [ClaimStatus.APPROVED, ClaimStatus.COMPLETED] } },
             select: { approvedQuantity: true },
           },
         },
@@ -281,7 +281,7 @@ export class DonationsService {
     }
 
     const approvedSum = donation.claims
-      .filter((c) => c.status === ClaimStatus.APPROVED)
+      .filter((c) => c.status === ClaimStatus.APPROVED || c.status === ClaimStatus.COMPLETED)
       .reduce((sum, c) => sum + Number(c.approvedQuantity ?? 0), 0);
 
     const remainingQuantity = Math.max(0, Number(donation.totalQuantity) - approvedSum);

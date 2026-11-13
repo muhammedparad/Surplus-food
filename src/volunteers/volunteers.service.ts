@@ -1,11 +1,11 @@
 import {
-  BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import type { AuthenticatedUser } from '../common/interfaces/authenticated-user.interface.js';
+import { TrackingGateway } from '../deliveries/tracking.gateway.js';
 import {
   DeliveryStatus,
   VerificationStatus,
@@ -38,7 +38,10 @@ function calculateHaversineDistanceKm(
 
 @Injectable()
 export class VolunteersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly trackingGateway?: TrackingGateway,
+  ) {}
 
   async createProfile(dto: CreateVolunteerProfileDto, actor: AuthenticatedUser) {
     const existing = await this.prisma.volunteerProfile.findUnique({
@@ -186,6 +189,15 @@ export class VolunteersService {
           description: `Volunteer in transit ping (lat: ${dto.latitude}, lng: ${dto.longitude})`,
         },
       });
+
+      if (this.trackingGateway) {
+        this.trackingGateway.broadcastLocationUpdate(activeDelivery.id, {
+          latitude: dto.latitude,
+          longitude: dto.longitude,
+          estimatedArrivalAt: estimatedArrivalAt ?? null,
+          status: activeDelivery.status,
+        });
+      }
     }
 
     return {

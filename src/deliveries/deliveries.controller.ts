@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Sse,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -15,6 +16,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import type { Observable } from 'rxjs';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator.js';
 import type { AuthenticatedUser } from '../common/interfaces/authenticated-user.interface.js';
@@ -24,12 +26,16 @@ import {
   ScanDirectHandoverDto,
   ScanPickupDto,
 } from './dto/delivery-handshake.dto.js';
+import { TrackingGateway } from './tracking.gateway.js';
 
 @ApiTags('Deliveries & Volunteer Tracking')
 @ApiBearerAuth()
 @Controller('deliveries')
 export class DeliveriesController {
-  constructor(private readonly deliveriesService: DeliveriesService) {}
+  constructor(
+    private readonly deliveriesService: DeliveriesService,
+    private readonly trackingGateway: TrackingGateway,
+  ) {}
 
   @Get('available')
   @RequirePermissions('delivery:accept')
@@ -82,6 +88,18 @@ export class DeliveriesController {
   @ApiParam({ name: 'id', description: 'Delivery UUID' })
   async getLiveTracking(@Param('id', ParseUUIDPipe) id: string) {
     return this.deliveriesService.getLiveTracking(id);
+  }
+
+  @Sse(':id/tracking/stream')
+  @RequirePermissions('delivery:read')
+  @ApiOperation({
+    summary: 'Server-Sent Events (SSE) live tracking stream for volunteer courier GPS position & ETA updates',
+  })
+  @ApiParam({ name: 'id', description: 'Delivery UUID' })
+  streamTracking(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Observable<{ data: unknown }> {
+    return this.trackingGateway.getLocationStream(id);
   }
 
   @Post(':id/scan-delivery')

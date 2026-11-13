@@ -30,6 +30,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 import { RolesModule } from './roles/roles.module.js';
 import { SessionsModule } from './sessions/sessions.module.js';
+import { UploadsModule } from './uploads/uploads.module.js';
 import { UsersModule } from './users/users.module.js';
 import { VerificationsModule } from './verifications/verifications.module.js';
 import { VolunteersModule } from './volunteers/volunteers.module.js';
@@ -89,6 +90,7 @@ import { VolunteersModule } from './volunteers/volunteers.module.js';
     FoodRequestsModule,
     NotificationsModule,
     ReviewsModule,
+    UploadsModule,
     AuthModule,
     HealthModule,
   ],
