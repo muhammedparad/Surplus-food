@@ -20,8 +20,10 @@ import { ClaimsModule } from './claims/claims.module.js';
 import { DeliveriesModule } from './deliveries/deliveries.module.js';
 import { DonationsModule } from './donations/donations.module.js';
 import { EmailModule } from './email/email.module.js';
+import { FoodRequestsModule } from './food-requests/food-requests.module.js';
 import { HealthModule } from './health/health.module.js';
 import { LocationsModule } from './locations/locations.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 import { OrganizationsModule } from './organizations/organizations.module.js';
 import { PermissionsModule } from './permissions/permissions.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -83,6 +85,8 @@ import { VolunteersModule } from './volunteers/volunteers.module.js';
     ClaimsModule,
     VolunteersModule,
     DeliveriesModule,
+    FoodRequestsModule,
+    NotificationsModule,
     AuthModule,
     HealthModule,
   ],
