@@ -609,19 +609,24 @@ model NgoRequestFulfillment {
 }
 
 model Delivery {
-  id               String         @id @default(uuid()) @db.Uuid
-  donationClaimId  String         @unique @map("donation_claim_id") @db.Uuid
-  volunteerId      String?        @map("volunteer_id") @db.Uuid
-  status           DeliveryStatus @default(PENDING)
-  assignedAt       DateTime?      @map("assigned_at")
-  acceptedAt       DateTime?      @map("accepted_at")
-  pickedUpAt       DateTime?      @map("picked_up_at")
-  deliveredAt      DateTime?      @map("delivered_at")
-  pickupCodeHash   String?        @map("pickup_code_hash")
-  deliveryCodeHash String?        @map("delivery_code_hash")
-  failureReason    String?        @map("failure_reason")
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
+  id                 String         @id @default(uuid()) @db.Uuid
+  donationClaimId    String         @unique @map("donation_claim_id") @db.Uuid
+  volunteerId        String?        @map("volunteer_id") @db.Uuid
+  status             DeliveryStatus @default(PENDING)
+  assignedAt         DateTime?      @map("assigned_at")
+  acceptedAt         DateTime?      @map("accepted_at")
+  pickedUpAt         DateTime?      @map("picked_up_at")
+  deliveredAt        DateTime?      @map("delivered_at")
+  estimatedArrivalAt DateTime?      @map("estimated_arrival_at")
+  currentLatitude    Decimal?       @map("current_latitude") @db.Decimal(10, 7)
+  currentLongitude   Decimal?       @map("current_longitude") @db.Decimal(10, 7)
+  pickupCodeHash     String?        @map("pickup_code_hash")
+  deliveryCodeHash   String?        @map("delivery_code_hash")
+  pickupQrToken      String?        @unique @map("pickup_qr_token")
+  deliveryQrToken    String?        @unique @map("delivery_qr_token")
+  failureReason      String?        @map("failure_reason")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
 
   donationClaim DonationClaim     @relation(fields: [donationClaimId], references: [id], onDelete: Cascade)
   volunteer     VolunteerProfile? @relation(fields: [volunteerId], references: [id], onDelete: SetNull)

@@ -396,8 +396,13 @@ CREATE TABLE "deliveries" (
     "accepted_at" TIMESTAMP(3),
     "picked_up_at" TIMESTAMP(3),
     "delivered_at" TIMESTAMP(3),
+    "estimated_arrival_at" TIMESTAMP(3),
+    "current_latitude" DECIMAL(10,7),
+    "current_longitude" DECIMAL(10,7),
     "pickup_code_hash" TEXT,
     "delivery_code_hash" TEXT,
+    "pickup_qr_token" TEXT,
+    "delivery_qr_token" TEXT,
     "failure_reason" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -732,6 +737,12 @@ CREATE INDEX "ngo_request_fulfillments_donation_id_idx" ON "ngo_request_fulfillm
 
 -- CreateIndex
 CREATE UNIQUE INDEX "deliveries_donation_claim_id_key" ON "deliveries"("donation_claim_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "deliveries_pickup_qr_token_key" ON "deliveries"("pickup_qr_token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "deliveries_delivery_qr_token_key" ON "deliveries"("delivery_qr_token");
 
 -- CreateIndex
 CREATE INDEX "deliveries_volunteer_id_idx" ON "deliveries"("volunteer_id");
