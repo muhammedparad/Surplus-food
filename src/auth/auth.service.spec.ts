@@ -6,6 +6,25 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { vi } from 'vitest';
+
+vi.mock('argon2', () => {
+  const hashMock = vi.fn(async (plain: string) => `$argon2id$v=19$mocked$${Buffer.from(plain).toString('base64')}`);
+  const verifyMock = vi.fn(async (hash: string, plain: string) => {
+    const expected = `$argon2id$v=19$mocked$${Buffer.from(plain).toString('base64')}`;
+    return hash === expected;
+  });
+  return {
+    default: {
+      argon2id: 2,
+      hash: hashMock,
+      verify: verifyMock,
+    },
+    argon2id: 2,
+    hash: hashMock,
+    verify: verifyMock,
+  };
+});
+
 import { UserStatus } from '../generated/prisma/enums.js';
 import type { AuditService } from '../audit/audit.service.js';
 import { AuditAction } from '../common/enums/security.enums.js';
