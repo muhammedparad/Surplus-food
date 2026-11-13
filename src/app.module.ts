@@ -16,8 +16,12 @@ import { type AppConfig, appConfig } from './config/app.config.js';
 import { authConfig } from './config/auth.config.js';
 import { validateEnv } from './config/env.validation.js';
 import { mailConfig } from './config/mail.config.js';
+import { ClaimsModule } from './claims/claims.module.js';
+import { DeliveriesModule } from './deliveries/deliveries.module.js';
+import { DonationsModule } from './donations/donations.module.js';
 import { EmailModule } from './email/email.module.js';
 import { HealthModule } from './health/health.module.js';
+import { LocationsModule } from './locations/locations.module.js';
 import { OrganizationsModule } from './organizations/organizations.module.js';
 import { PermissionsModule } from './permissions/permissions.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -25,6 +29,7 @@ import { RolesModule } from './roles/roles.module.js';
 import { SessionsModule } from './sessions/sessions.module.js';
 import { UsersModule } from './users/users.module.js';
 import { VerificationsModule } from './verifications/verifications.module.js';
+import { VolunteersModule } from './volunteers/volunteers.module.js';
 
 @Module({
   imports: [
@@ -73,6 +78,11 @@ import { VerificationsModule } from './verifications/verifications.module.js';
     UsersModule,
     OrganizationsModule,
     VerificationsModule,
+    LocationsModule,
+    DonationsModule,
+    ClaimsModule,
+    VolunteersModule,
+    DeliveriesModule,
     AuthModule,
     HealthModule,
   ],

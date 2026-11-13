@@ -65,6 +65,10 @@ export class CryptoService {
     return crypto.createHash('sha256').update(rawToken, 'utf8').digest('hex');
   }
 
+  sha256(raw: string): string {
+    return this.hashToken(raw);
+  }
+
   timingSafeEqual(a: string, b: string): boolean {
     const bufA = Buffer.from(a, 'utf8');
     const bufB = Buffer.from(b, 'utf8');
