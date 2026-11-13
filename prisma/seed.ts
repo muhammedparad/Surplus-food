@@ -52,6 +52,28 @@ const SYSTEM_PERMISSIONS: SeedPermissionDef[] = [
   { key: 'organization_member:invite', resource: 'organization_member', action: 'invite', description: 'Invite new members to an organization', scope: PermissionScope.ORGANIZATION },
   { key: 'organization_member:update', resource: 'organization_member', action: 'update', description: 'Update organization member roles', scope: PermissionScope.ORGANIZATION },
   { key: 'organization_member:remove', resource: 'organization_member', action: 'remove', description: 'Remove members from an organization', scope: PermissionScope.ORGANIZATION },
+
+  { key: 'donation:create', resource: 'donation', action: 'create', description: 'Publish food donations', scope: PermissionScope.ORGANIZATION },
+  { key: 'donation:read', resource: 'donation', action: 'read', description: 'View available or historical donations', scope: PermissionScope.BOTH },
+  { key: 'donation:update', resource: 'donation', action: 'update', description: 'Update donation details and status', scope: PermissionScope.ORGANIZATION },
+  { key: 'donation:delete', resource: 'donation', action: 'delete', description: 'Cancel or close donations', scope: PermissionScope.ORGANIZATION },
+
+  { key: 'claim:create', resource: 'claim', action: 'create', description: 'Claim portions of food donations', scope: PermissionScope.ORGANIZATION },
+  { key: 'claim:read', resource: 'claim', action: 'read', description: 'View donation claims', scope: PermissionScope.BOTH },
+  { key: 'claim:review', resource: 'claim', action: 'review', description: 'Approve or reject donation claims', scope: PermissionScope.ORGANIZATION },
+  { key: 'claim:cancel', resource: 'claim', action: 'cancel', description: 'Cancel a claimed food portion', scope: PermissionScope.ORGANIZATION },
+
+  { key: 'delivery:read', resource: 'delivery', action: 'read', description: 'View delivery tasks and tracking status', scope: PermissionScope.BOTH },
+  { key: 'delivery:accept', resource: 'delivery', action: 'accept', description: 'Accept delivery tasks as a volunteer', scope: PermissionScope.GLOBAL },
+  { key: 'delivery:update', resource: 'delivery', action: 'update', description: 'Update delivery status (pickup/delivery codes)', scope: PermissionScope.BOTH },
+
+  { key: 'food_request:create', resource: 'food_request', action: 'create', description: 'Post advance food requirements', scope: PermissionScope.ORGANIZATION },
+  { key: 'food_request:read', resource: 'food_request', action: 'read', description: 'View advance food requirements', scope: PermissionScope.BOTH },
+  { key: 'food_request:update', resource: 'food_request', action: 'update', description: 'Update advance food requirements', scope: PermissionScope.ORGANIZATION },
+
+  { key: 'verification:submit', resource: 'verification', action: 'submit', description: 'Submit verification requests and documents', scope: PermissionScope.BOTH },
+  { key: 'verification:read', resource: 'verification', action: 'read', description: 'View verification requests and documents', scope: PermissionScope.GLOBAL },
+  { key: 'verification:review', resource: 'verification', action: 'review', description: 'Approve or reject verification requests', scope: PermissionScope.GLOBAL },
 ];
 
 const ALL_PERMISSION_KEYS = SYSTEM_PERMISSIONS.map((p) => p.key);
@@ -116,6 +138,20 @@ const SYSTEM_ROLES: SeedRoleDef[] = [
       'role:assign',
       'permission:read',
       'audit:read',
+      'donation:create',
+      'donation:read',
+      'donation:update',
+      'donation:delete',
+      'claim:create',
+      'claim:read',
+      'claim:review',
+      'claim:cancel',
+      'delivery:read',
+      'delivery:update',
+      'food_request:create',
+      'food_request:read',
+      'food_request:update',
+      'verification:submit',
     ],
   },
   {
@@ -134,6 +170,18 @@ const SYSTEM_ROLES: SeedRoleDef[] = [
       'role:assign',
       'permission:read',
       'audit:read',
+      'donation:create',
+      'donation:read',
+      'donation:update',
+      'claim:create',
+      'claim:read',
+      'claim:review',
+      'delivery:read',
+      'delivery:update',
+      'food_request:create',
+      'food_request:read',
+      'food_request:update',
+      'verification:submit',
     ],
   },
   {
@@ -141,14 +189,28 @@ const SYSTEM_ROLES: SeedRoleDef[] = [
     slug: 'org_member',
     description: 'Standard organization member with read access to organization workspace and members',
     scope: RoleScope.ORGANIZATION,
-    permissionKeys: ['organization:read', 'organization_member:read'],
+    permissionKeys: [
+      'organization:read',
+      'organization_member:read',
+      'donation:read',
+      'claim:read',
+      'food_request:read',
+      'delivery:read',
+    ],
   },
   {
     name: 'Organization Viewer',
     slug: 'org_viewer',
     description: 'Read-only organization participant',
     scope: RoleScope.ORGANIZATION,
-    permissionKeys: ['organization:read'],
+    permissionKeys: ['organization:read', 'donation:read', 'food_request:read'],
+  },
+  {
+    name: 'Volunteer',
+    slug: 'volunteer',
+    description: 'Community volunteer for food pickup and delivery tasks',
+    scope: RoleScope.GLOBAL,
+    permissionKeys: ['delivery:accept', 'delivery:read', 'delivery:update', 'verification:submit'],
   },
 ];
 
@@ -230,6 +292,29 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
 
   for (const roleDef of SYSTEM_ROLES) {
     await upsertSystemRole(prisma, roleDef, permissionMap);
+  }
+
+  const INITIAL_ALLERGENS = [
+    'peanuts',
+    'tree nuts',
+    'milk',
+    'eggs',
+    'wheat',
+    'soy',
+    'fish',
+    'shellfish',
+    'sesame',
+    'mustard',
+    'celery',
+    'sulphites',
+  ];
+
+  for (const name of INITIAL_ALLERGENS) {
+    await prisma.foodAllergen.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
   }
 }
 

@@ -47,14 +47,134 @@ enum InvitationStatus {
   EXPIRED
 }
 
+enum OrganizationType {
+  RESTAURANT
+  NGO
+  BAKERY
+  CATERER
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum TransportType {
+  WALKING
+  BICYCLE
+  MOTORBIKE
+  CAR
+  OTHER
+}
+
+enum FoodCategory {
+  RICE
+  BREAD
+  MEALS
+  FRUITS
+  VEGETABLES
+  OTHER
+}
+
+enum FoodType {
+  VEG
+  NON_VEG
+  VEGAN
+}
+
+enum FoodUnit {
+  MEALS
+  KG
+  PACKETS
+  LITRES
+}
+
+enum StorageType {
+  HOT
+  REFRIGERATED
+  AMBIENT
+  FROZEN
+}
+
+enum DonationStatus {
+  DRAFT
+  AVAILABLE
+  CLOSED
+  EXPIRED
+  CANCELLED
+}
+
+enum SafetyCheckResult {
+  PASS
+  FAIL
+  NOT_APPLICABLE
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum RequestPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum FoodRequestStatus {
+  OPEN
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+
+enum FulfillmentStatus {
+  PROPOSED
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  ACCEPTED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum AdminRoleType {
+  SUPER_ADMIN
+  ADMIN
+  REVIEWER
+}
+
+enum DevicePlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
 model User {
   id                   String     @id @default(uuid()) @db.Uuid
   email                String     @unique
+  phone                String?    @unique
   name                 String
   passwordHash         String?    @map("password_hash")
   avatarUrl            String?    @map("avatar_url")
   status               UserStatus @default(ACTIVE)
   emailVerifiedAt      DateTime?  @map("email_verified_at")
+  phoneVerifiedAt      DateTime?  @map("phone_verified_at")
   lastLoginAt          DateTime?  @map("last_login_at")
   activeOrganizationId String?    @map("active_organization_id") @db.Uuid
   tokenVersion         Int        @default(1) @map("token_version")
@@ -62,19 +182,29 @@ model User {
   createdAt            DateTime   @default(now()) @map("created_at")
   updatedAt            DateTime   @updatedAt @map("updated_at")
 
-  activeOrganization      Organization?            @relation("UserActiveOrganization", fields: [activeOrganizationId], references: [id], onDelete: SetNull)
-  providerAccounts        AuthProviderAccount[]
-  userRoles               UserRole[]               @relation("UserRoleTarget")
-  assignedUserRoles       UserRole[]               @relation("UserRoleAssigner")
-  createdOrganizations    Organization[]           @relation("OrganizationCreator")
-  organizationMemberships OrganizationMember[]
-  assignedOrgMemberRoles  OrganizationMemberRole[] @relation("OrgMemberRoleAssigner")
-  sentInvitations         OrganizationInvitation[] @relation("OrganizationInviter")
-  sessions                Session[]
-  refreshTokenHistory     RefreshTokenHistory[]
-  emailVerificationTokens EmailVerificationToken[]
-  passwordResetTokens     PasswordResetToken[]
-  auditLogs               AuditLog[]               @relation("AuditActor")
+  activeOrganization              Organization?            @relation("UserActiveOrganization", fields: [activeOrganizationId], references: [id], onDelete: SetNull)
+  providerAccounts                AuthProviderAccount[]
+  userRoles                       UserRole[]               @relation("UserRoleTarget")
+  assignedUserRoles               UserRole[]               @relation("UserRoleAssigner")
+  createdOrganizations            Organization[]           @relation("OrganizationCreator")
+  organizationMemberships         OrganizationMember[]
+  assignedOrgMemberRoles          OrganizationMemberRole[] @relation("OrgMemberRoleAssigner")
+  sentInvitations                 OrganizationInvitation[] @relation("OrganizationInviter")
+  sessions                        Session[]
+  refreshTokenHistory             RefreshTokenHistory[]
+  emailVerificationTokens         EmailVerificationToken[]
+  passwordResetTokens             PasswordResetToken[]
+  auditLogs                       AuditLog[]               @relation("AuditActor")
+  volunteerProfile                VolunteerProfile?
+  donationSafetyChecks            DonationSafetyCheck[]
+  reviewedClaims                  DonationClaim[]          @relation("ReviewedClaims")
+  deliveryEvents                  DeliveryEvent[]
+  submittedVerificationRequests   VerificationRequest[]    @relation("SubmittedVerificationRequests")
+  reviewedVerificationRequests    VerificationRequest[]    @relation("ReviewedVerificationRequests")
+  adminRoles                      AdminRole[]
+  notifications                   Notification[]
+  userDevices                     UserDevice[]
+  notificationPreferences         NotificationPreference[]
 
   @@index([status])
   @@index([deletedAt])
@@ -171,22 +301,43 @@ model UserRole {
 }
 
 model Organization {
-  id          String             @id @default(uuid()) @db.Uuid
-  name        String
-  slug        String             @unique
-  status      OrganizationStatus @default(ACTIVE)
-  createdById String?            @map("created_by_id") @db.Uuid
-  createdAt   DateTime           @default(now()) @map("created_at")
-  updatedAt   DateTime           @updatedAt @map("updated_at")
+  id                 String             @id @default(uuid()) @db.Uuid
+  name               String
+  slug               String             @unique
+  type               OrganizationType   @default(RESTAURANT)
+  description        String?
+  email              String?
+  phone              String?
+  registrationNumber String?            @map("registration_number")
+  registeredAddress  String?            @map("registered_address")
+  latitude           Decimal?           @db.Decimal(10, 7)
+  longitude          Decimal?           @db.Decimal(10, 7)
+  isHidden           Boolean            @default(false) @map("is_hidden")
+  beneficiaryCount   Int?               @map("beneficiary_count")
+  servingCapacity    Int?               @map("serving_capacity")
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+  isActive           Boolean            @default(true) @map("is_active")
+  status             OrganizationStatus @default(ACTIVE)
+  createdById        String?            @map("created_by_id") @db.Uuid
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
 
-  createdBy   User?                    @relation("OrganizationCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  activeUsers User[]                   @relation("UserActiveOrganization")
-  members     OrganizationMember[]
-  roles       Role[]
-  invitations OrganizationInvitation[]
-  auditLogs   AuditLog[]
+  createdBy            User?                    @relation("OrganizationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  activeUsers          User[]                   @relation("UserActiveOrganization")
+  members              OrganizationMember[]
+  roles                Role[]
+  invitations          OrganizationInvitation[]
+  auditLogs            AuditLog[]
+  pickupPoints         PickupPoint[]
+  deliveryLocations    DeliveryLocation[]
+  donations            Donation[]
+  donationClaims       DonationClaim[]
+  foodRequests         NgoFoodRequest[]
+  verificationRequests VerificationRequest[]
 
   @@index([status])
+  @@index([type])
+  @@index([verificationStatus])
   @@map("organizations")
 }
 
@@ -248,6 +399,352 @@ model OrganizationInvitation {
   @@map("organization_invitations")
 }
 
+model VolunteerProfile {
+  id                   String             @id @default(uuid()) @db.Uuid
+  userId               String             @unique @map("user_id") @db.Uuid
+  verificationStatus   VerificationStatus @default(PENDING) @map("verification_status")
+  isAvailable          Boolean            @default(true) @map("is_available")
+  transportType        TransportType      @default(OTHER) @map("transport_type")
+  maxCapacity          Decimal?           @map("max_capacity") @db.Decimal(10, 2)
+  capacityUnit         String?            @map("capacity_unit")
+  currentLatitude      Decimal?           @map("current_latitude") @db.Decimal(10, 7)
+  currentLongitude     Decimal?           @map("current_longitude") @db.Decimal(10, 7)
+  lastLocationUpdate   DateTime?          @map("last_location_update")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries           Delivery[]
+  verificationRequests VerificationRequest[]
+
+  @@index([isAvailable, verificationStatus])
+  @@map("volunteer_profiles")
+}
+
+model PickupPoint {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String
+  address        String
+  latitude       Decimal? @db.Decimal(10, 7)
+  longitude      Decimal? @db.Decimal(10, 7)
+  instructions   String?
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  donations    Donation[]
+
+  @@index([organizationId])
+  @@map("pickup_points")
+}
+
+model DeliveryLocation {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String
+  address        String
+  latitude       Decimal? @db.Decimal(10, 7)
+  longitude      Decimal? @db.Decimal(10, 7)
+  instructions   String?
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  foodRequests NgoFoodRequest[]
+
+  @@index([organizationId])
+  @@map("delivery_locations")
+}
+
+model Donation {
+  id                 String         @id @default(uuid()) @db.Uuid
+  organizationId     String         @map("organization_id") @db.Uuid
+  foodName           String         @map("food_name")
+  description        String?
+  category           FoodCategory
+  foodType           FoodType       @map("food_type")
+  totalQuantity      Decimal        @map("total_quantity") @db.Decimal(10, 2)
+  unit               FoodUnit
+  preparedAt         DateTime       @map("prepared_at")
+  availableFrom      DateTime       @map("available_from")
+  collectionDeadline DateTime       @map("collection_deadline")
+  storageType        StorageType    @map("storage_type")
+  pickupPointId      String         @map("pickup_point_id") @db.Uuid
+  safetyDeclared     Boolean        @default(false) @map("safety_declared")
+  status             DonationStatus @default(AVAILABLE)
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  pickupPoint  PickupPoint              @relation(fields: [pickupPointId], references: [id], onDelete: Restrict)
+  images       DonationImage[]
+  allergens    DonationAllergen[]
+  safetyChecks DonationSafetyCheck[]
+  claims       DonationClaim[]
+  fulfillments NgoRequestFulfillment[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([collectionDeadline])
+  @@map("donations")
+}
+
+model DonationImage {
+  id         String   @id @default(uuid()) @db.Uuid
+  donationId String   @map("donation_id") @db.Uuid
+  imageUrl   String   @map("image_url")
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  donation Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
+
+  @@index([donationId])
+  @@map("donation_images")
+}
+
+model FoodAllergen {
+  id        String             @id @default(uuid()) @db.Uuid
+  name      String             @unique
+  donations DonationAllergen[]
+
+  @@map("food_allergens")
+}
+
+model DonationAllergen {
+  donationId String @map("donation_id") @db.Uuid
+  allergenId String @map("allergen_id") @db.Uuid
+
+  donation Donation     @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  allergen FoodAllergen @relation(fields: [allergenId], references: [id], onDelete: Cascade)
+
+  @@id([donationId, allergenId])
+  @@map("donation_allergens")
+}
+
+model DonationSafetyCheck {
+  id          String            @id @default(uuid()) @db.Uuid
+  donationId  String            @map("donation_id") @db.Uuid
+  checkedById String            @map("checked_by") @db.Uuid
+  checkType   String            @map("check_type")
+  result      SafetyCheckResult
+  notes       String?
+  checkedAt   DateTime          @default(now()) @map("checked_at")
+
+  donation  Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  checkedBy User     @relation(fields: [checkedById], references: [id], onDelete: Restrict)
+
+  @@index([donationId])
+  @@map("donation_safety_checks")
+}
+
+model DonationClaim {
+  id                String      @id @default(uuid()) @db.Uuid
+  donationId        String      @map("donation_id") @db.Uuid
+  ngoId             String      @map("ngo_id") @db.Uuid
+  requestedQuantity Decimal     @map("requested_quantity") @db.Decimal(10, 2)
+  approvedQuantity  Decimal?    @map("approved_quantity") @db.Decimal(10, 2)
+  status            ClaimStatus @default(PENDING)
+  requestedAt       DateTime    @default(now()) @map("requested_at")
+  reviewedAt        DateTime?   @map("reviewed_at")
+  reviewedById      String?     @map("reviewed_by") @db.Uuid
+  rejectionReason   String?     @map("rejection_reason")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  donation   Donation     @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  ngo        Organization @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  reviewedBy User?        @relation("ReviewedClaims", fields: [reviewedById], references: [id], onDelete: SetNull)
+  delivery   Delivery?
+
+  @@index([donationId])
+  @@index([ngoId])
+  @@index([status])
+  @@map("donation_claims")
+}
+
+model NgoFoodRequest {
+  id                 String            @id @default(uuid()) @db.Uuid
+  ngoId              String            @map("ngo_id") @db.Uuid
+  foodCategory       FoodCategory      @map("food_category")
+  foodType           FoodType          @map("food_type")
+  requiredQuantity   Decimal           @map("required_quantity") @db.Decimal(10, 2)
+  unit               FoodUnit
+  requiredDate       DateTime          @map("required_date") @db.Date
+  requiredBefore     DateTime          @map("required_before")
+  deliveryLocationId String            @map("delivery_location_id") @db.Uuid
+  priority           RequestPriority   @default(NORMAL)
+  notes              String?
+  status             FoodRequestStatus @default(OPEN)
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  ngo              Organization             @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  deliveryLocation DeliveryLocation         @relation(fields: [deliveryLocationId], references: [id], onDelete: Restrict)
+  fulfillments     NgoRequestFulfillment[]
+
+  @@index([ngoId])
+  @@index([status])
+  @@index([requiredDate])
+  @@map("ngo_food_requests")
+}
+
+model NgoRequestFulfillment {
+  id                String            @id @default(uuid()) @db.Uuid
+  requestId         String            @map("request_id") @db.Uuid
+  donationId        String            @map("donation_id") @db.Uuid
+  allocatedQuantity Decimal           @map("allocated_quantity") @db.Decimal(10, 2)
+  status            FulfillmentStatus @default(PROPOSED)
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  request  NgoFoodRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  donation Donation       @relation(fields: [donationId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([donationId])
+  @@map("ngo_request_fulfillments")
+}
+
+model Delivery {
+  id               String         @id @default(uuid()) @db.Uuid
+  donationClaimId  String         @unique @map("donation_claim_id") @db.Uuid
+  volunteerId      String?        @map("volunteer_id") @db.Uuid
+  status           DeliveryStatus @default(PENDING)
+  assignedAt       DateTime?      @map("assigned_at")
+  acceptedAt       DateTime?      @map("accepted_at")
+  pickedUpAt       DateTime?      @map("picked_up_at")
+  deliveredAt      DateTime?      @map("delivered_at")
+  pickupCodeHash   String?        @map("pickup_code_hash")
+  deliveryCodeHash String?        @map("delivery_code_hash")
+  failureReason    String?        @map("failure_reason")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  donationClaim DonationClaim     @relation(fields: [donationClaimId], references: [id], onDelete: Cascade)
+  volunteer     VolunteerProfile? @relation(fields: [volunteerId], references: [id], onDelete: SetNull)
+  events        DeliveryEvent[]
+
+  @@index([volunteerId])
+  @@index([status])
+  @@map("deliveries")
+}
+
+model DeliveryEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  deliveryId  String   @map("delivery_id") @db.Uuid
+  actorId     String   @map("actor_id") @db.Uuid
+  eventType   String   @map("event_type")
+  description String?
+  latitude    Decimal? @db.Decimal(10, 7)
+  longitude   Decimal? @db.Decimal(10, 7)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  delivery Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  actor    User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([deliveryId])
+  @@map("delivery_events")
+}
+
+model VerificationRequest {
+  id                 String             @id @default(uuid()) @db.Uuid
+  organizationId     String?            @map("organization_id") @db.Uuid
+  volunteerProfileId String?            @map("volunteer_profile_id") @db.Uuid
+  submittedById      String             @map("submitted_by") @db.Uuid
+  status             VerificationStatus @default(PENDING)
+  reviewedById       String?            @map("reviewed_by") @db.Uuid
+  reviewedAt         DateTime?          @map("reviewed_at")
+  rejectionReason    String?            @map("rejection_reason")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  organization     Organization?          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  volunteerProfile VolunteerProfile?      @relation(fields: [volunteerProfileId], references: [id], onDelete: Cascade)
+  submittedBy      User                   @relation("SubmittedVerificationRequests", fields: [submittedById], references: [id], onDelete: Cascade)
+  reviewedBy       User?                  @relation("ReviewedVerificationRequests", fields: [reviewedById], references: [id], onDelete: SetNull)
+  documents        VerificationDocument[]
+
+  @@index([status])
+  @@index([organizationId])
+  @@index([volunteerProfileId])
+  @@map("verification_requests")
+}
+
+model VerificationDocument {
+  id                    String   @id @default(uuid()) @db.Uuid
+  verificationRequestId String   @map("verification_request_id") @db.Uuid
+  documentType          String   @map("document_type")
+  fileUrl               String   @map("file_url")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  verificationRequest VerificationRequest @relation(fields: [verificationRequestId], references: [id], onDelete: Cascade)
+
+  @@index([verificationRequestId])
+  @@map("verification_documents")
+}
+
+model AdminRole {
+  id        String        @id @default(uuid()) @db.Uuid
+  userId    String        @map("user_id") @db.Uuid
+  role      AdminRoleType
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@map("admin_roles")
+}
+
+model Notification {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  title         String
+  message       String
+  type          String
+  referenceType String?  @map("reference_type")
+  referenceId   String?  @map("reference_id") @db.Uuid
+  isRead        Boolean  @default(false) @map("is_read")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model UserDevice {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @map("user_id") @db.Uuid
+  deviceToken String         @unique @map("device_token")
+  platform    DevicePlatform
+  isActive    Boolean        @default(true) @map("is_active")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_devices")
+}
+
+model NotificationPreference {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  notificationType String   @map("notification_type")
+  pushEnabled      Boolean  @default(true) @map("push_enabled")
+  emailEnabled     Boolean  @default(true) @map("email_enabled")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationType])
+  @@map("notification_preferences")
+}
+
 model Session {
   id               String    @id @default(uuid()) @db.Uuid
   userId           String    @map("user_id") @db.Uuid
@@ -264,8 +761,8 @@ model Session {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHistory  RefreshTokenHistory[]
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHistory RefreshTokenHistory[]
 
   @@index([userId, revokedAt])
   @@index([familyId])
@@ -292,12 +789,12 @@ model RefreshTokenHistory {
 }
 
 model EmailVerificationToken {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  tokenHash String    @unique @map("token_hash")
-  expiresAt DateTime  @map("expires_at")
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
   consumedAt DateTime? @map("consumed_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -307,12 +804,12 @@ model EmailVerificationToken {
 }
 
 model PasswordResetToken {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  tokenHash String    @unique @map("token_hash")
-  expiresAt DateTime  @map("expires_at")
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
   consumedAt DateTime? @map("consumed_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -341,4 +838,17 @@ model AuditLog {
   @@index([action, createdAt])
   @@index([targetType, targetId])
   @@map("audit_logs")
+}
+
+model OutboxEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  eventType     String    @map("event_type")
+  aggregateType String    @map("aggregate_type")
+  aggregateId   String    @map("aggregate_id") @db.Uuid
+  payload       Json
+  processedAt   DateTime? @map("processed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([processedAt, createdAt])
+  @@map("outbox_events")
 }
