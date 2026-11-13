@@ -8,15 +8,18 @@ import {
 import { AuditService } from '../audit/audit.service.js';
 import { AuditAction } from '../common/enums/security.enums.js';
 import type { AuthenticatedUser } from '../common/interfaces/authenticated-user.interface.js';
+import { AuthorizationLookupService } from '../common/services/authorization-lookup.service.js';
 import { CryptoService } from '../common/services/crypto.service.js';
 import {
   ClaimStatus,
   DeliveryStatus,
+  PickupMode,
   VerificationStatus,
 } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type {
   ScanDeliveryDto,
+  ScanDirectHandoverDto,
   ScanPickupDto,
 } from './dto/delivery-handshake.dto.js';
 
@@ -26,6 +29,7 @@ export class DeliveriesService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly cryptoService: CryptoService,
+    private readonly authLookup: AuthorizationLookupService,
   ) {}
 
   private async getVerifiedVolunteerProfile(userId: string) {
@@ -80,6 +84,7 @@ export class DeliveriesService {
       where: {
         status: DeliveryStatus.PENDING,
         volunteerId: null,
+        pickupMode: PickupMode.VOLUNTEER,
       },
       orderBy: { createdAt: 'asc' },
       include: {
@@ -167,6 +172,12 @@ export class DeliveriesService {
 
       if (!delivery) {
         throw new NotFoundException('Delivery task not found');
+      }
+
+      if (delivery.pickupMode !== PickupMode.VOLUNTEER) {
+        throw new BadRequestException(
+          'This delivery is designated for DIRECT_NGO pickup and cannot be claimed by volunteers',
+        );
       }
 
       if (delivery.status !== DeliveryStatus.PENDING || delivery.volunteerId !== null) {
@@ -428,5 +439,121 @@ export class DeliveriesService {
         destination: delivery.donationClaim.ngo.deliveryLocations[0]?.address ?? null,
       },
     };
+  }
+
+  async confirmDirectHandover(
+    deliveryId: string,
+    dto: ScanDirectHandoverDto,
+    actor: AuthenticatedUser,
+  ) {
+    const delivery = await this.prisma.delivery.findUnique({
+      where: { id: deliveryId },
+      include: {
+        donationClaim: {
+          include: {
+            donation: true,
+            ngo: true,
+          },
+        },
+      },
+    });
+
+    if (!delivery) {
+      throw new NotFoundException('Delivery record not found');
+    }
+
+    if (delivery.pickupMode !== PickupMode.DIRECT_NGO) {
+      throw new BadRequestException(
+        'This delivery is assigned to volunteer transport. Use volunteer pickup/delivery handshake endpoints instead.',
+      );
+    }
+
+    if (delivery.status === DeliveryStatus.DELIVERED) {
+      throw new ConflictException('This direct pickup has already been completed');
+    }
+
+    if (delivery.status !== DeliveryStatus.PENDING) {
+      throw new ConflictException(
+        `Cannot complete direct pickup for delivery in status "${delivery.status}"`,
+      );
+    }
+
+    const { roleSlugs: globalRoles } =
+      await this.authLookup.getGlobalRolesAndPermissions(actor.id);
+    if (!globalRoles.includes('super_admin') && !globalRoles.includes('admin')) {
+      const membership = await this.prisma.organizationMember.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: delivery.donationClaim.ngoId,
+            userId: actor.id,
+          },
+        },
+      });
+
+      if (!membership || membership.status !== 'ACTIVE') {
+        throw new ForbiddenException(
+          'Only active representatives of the claiming NGO or administrators can confirm direct pickup',
+        );
+      }
+    }
+
+    let verified = false;
+    if (
+      dto.qrToken &&
+      delivery.pickupQrToken &&
+      dto.qrToken.trim() === delivery.pickupQrToken
+    ) {
+      verified = true;
+    } else if (dto.code && delivery.pickupCodeHash) {
+      const hash = this.cryptoService.sha256(dto.code.trim());
+      if (hash === delivery.pickupCodeHash) {
+        verified = true;
+      }
+    }
+
+    if (!verified) {
+      throw new BadRequestException(
+        'Direct handover verification failed: Scanned provider QR token or 6-digit code does not match',
+      );
+    }
+
+    const now = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedDelivery = await tx.delivery.update({
+        where: { id: deliveryId },
+        data: {
+          status: DeliveryStatus.DELIVERED,
+          directHandoverAt: now,
+          pickedUpAt: now,
+          deliveredAt: now,
+          events: {
+            create: {
+              actorId: actor.id,
+              eventType: 'DIRECT_NGO_HANDOVER',
+              description: `Direct 1-step pickup completed by NGO representative ${actor.name} from provider`,
+            },
+          },
+        },
+      });
+
+      await this.auditService.record(
+        {
+          actorId: actor.id,
+          action: AuditAction.DELIVERY_COMPLETED,
+          targetType: 'Delivery',
+          targetId: deliveryId,
+          organizationId: delivery.donationClaim.ngoId,
+          metadata: {
+            directHandoverAt: now.toISOString(),
+            ngoId: delivery.donationClaim.ngoId,
+            donationId: delivery.donationClaim.donationId,
+          },
+        },
+        tx,
+      );
+
+      return updatedDelivery;
+    });
   }
 }

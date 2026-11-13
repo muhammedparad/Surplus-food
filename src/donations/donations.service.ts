@@ -118,6 +118,12 @@ export class DonationsService {
           storageType: dto.storageType,
           pickupPointId: dto.pickupPointId,
           safetyDeclared: dto.safetyDeclared,
+          eventName: dto.eventName?.trim() ?? null,
+          eventType: dto.eventType?.trim() ?? null,
+          venueContactName: dto.venueContactName?.trim() ?? null,
+          venueContactPhone: dto.venueContactPhone?.trim() ?? null,
+          allowPublicPickup: dto.allowPublicPickup ?? false,
+          publicPickupInstructions: dto.publicPickupInstructions?.trim() ?? null,
           status: DonationStatus.AVAILABLE,
           images: dto.imageUrls?.length
             ? {
@@ -175,6 +181,8 @@ export class DonationsService {
       ...(query.foodType ? { foodType: query.foodType } : {}),
       ...(query.storageType ? { storageType: query.storageType } : {}),
       ...(query.organizationId ? { organizationId: query.organizationId } : {}),
+      ...(query.allowPublicPickup !== undefined ? { allowPublicPickup: query.allowPublicPickup } : {}),
+      ...(query.eventType ? { eventType: query.eventType } : {}),
     };
 
     if (query.status === DonationStatus.AVAILABLE) {
@@ -309,6 +317,12 @@ export class DonationsService {
         ...(dto.status !== undefined ? { status: dto.status } : {}),
         ...(dto.pickupPointId !== undefined ? { pickupPointId: dto.pickupPointId } : {}),
         ...(dto.safetyDeclared !== undefined ? { safetyDeclared: dto.safetyDeclared } : {}),
+        ...(dto.eventName !== undefined ? { eventName: dto.eventName?.trim() ?? null } : {}),
+        ...(dto.eventType !== undefined ? { eventType: dto.eventType?.trim() ?? null } : {}),
+        ...(dto.venueContactName !== undefined ? { venueContactName: dto.venueContactName?.trim() ?? null } : {}),
+        ...(dto.venueContactPhone !== undefined ? { venueContactPhone: dto.venueContactPhone?.trim() ?? null } : {}),
+        ...(dto.allowPublicPickup !== undefined ? { allowPublicPickup: dto.allowPublicPickup } : {}),
+        ...(dto.publicPickupInstructions !== undefined ? { publicPickupInstructions: dto.publicPickupInstructions?.trim() ?? null } : {}),
       },
       include: {
         images: true,

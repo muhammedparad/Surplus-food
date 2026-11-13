@@ -52,6 +52,18 @@ enum OrganizationType {
   NGO
   BAKERY
   CATERER
+  EVENT_ORGANIZER
+}
+
+enum PickupMode {
+  VOLUNTEER
+  DIRECT_NGO
+}
+
+enum ReviewTargetType {
+  ORGANIZATION
+  VOLUNTEER
+  DONATION
 }
 
 enum VerificationStatus {
@@ -205,6 +217,7 @@ model User {
   notifications                   Notification[]
   userDevices                     UserDevice[]
   notificationPreferences         NotificationPreference[]
+  reviews                         Review[]
 
   @@index([status])
   @@index([deletedAt])
@@ -471,10 +484,16 @@ model Donation {
   preparedAt         DateTime       @map("prepared_at")
   availableFrom      DateTime       @map("available_from")
   collectionDeadline DateTime       @map("collection_deadline")
-  storageType        StorageType    @map("storage_type")
-  pickupPointId      String         @map("pickup_point_id") @db.Uuid
-  safetyDeclared     Boolean        @default(false) @map("safety_declared")
-  status             DonationStatus @default(AVAILABLE)
+  storageType              StorageType    @map("storage_type")
+  pickupPointId            String         @map("pickup_point_id") @db.Uuid
+  safetyDeclared           Boolean        @default(false) @map("safety_declared")
+  eventName                String?        @map("event_name")
+  eventType                String?        @map("event_type")
+  venueContactName         String?        @map("venue_contact_name")
+  venueContactPhone        String?        @map("venue_contact_phone")
+  allowPublicPickup        Boolean        @default(false) @map("allow_public_pickup")
+  publicPickupInstructions String?        @map("public_pickup_instructions")
+  status                   DonationStatus @default(AVAILABLE)
   createdAt          DateTime       @default(now()) @map("created_at")
   updatedAt          DateTime       @updatedAt @map("updated_at")
 
@@ -546,6 +565,7 @@ model DonationClaim {
   ngoId             String      @map("ngo_id") @db.Uuid
   requestedQuantity Decimal     @map("requested_quantity") @db.Decimal(10, 2)
   approvedQuantity  Decimal?    @map("approved_quantity") @db.Decimal(10, 2)
+  pickupMode        PickupMode  @default(VOLUNTEER) @map("pickup_mode")
   status            ClaimStatus @default(PENDING)
   requestedAt       DateTime    @default(now()) @map("requested_at")
   reviewedAt        DateTime?   @map("reviewed_at")
@@ -624,6 +644,8 @@ model Delivery {
   deliveryCodeHash   String?        @map("delivery_code_hash")
   pickupQrToken      String?        @unique @map("pickup_qr_token")
   deliveryQrToken    String?        @unique @map("delivery_qr_token")
+  pickupMode         PickupMode     @default(VOLUNTEER) @map("pickup_mode")
+  directHandoverAt   DateTime?      @map("direct_handover_at")
   failureReason      String?        @map("failure_reason")
   createdAt          DateTime       @default(now()) @map("created_at")
   updatedAt          DateTime       @updatedAt @map("updated_at")
@@ -631,10 +653,30 @@ model Delivery {
   donationClaim DonationClaim     @relation(fields: [donationClaimId], references: [id], onDelete: Cascade)
   volunteer     VolunteerProfile? @relation(fields: [volunteerId], references: [id], onDelete: SetNull)
   events        DeliveryEvent[]
+  reviews       Review[]
 
   @@index([volunteerId])
   @@index([status])
   @@map("deliveries")
+}
+
+model Review {
+  id         String           @id @default(uuid()) @db.Uuid
+  authorId   String           @map("author_id") @db.Uuid
+  targetType ReviewTargetType @map("target_type")
+  targetId   String           @map("target_id") @db.Uuid
+  deliveryId String?          @map("delivery_id") @db.Uuid
+  rating     Int              @db.SmallInt
+  comment    String?
+  aspects    Json?
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  delivery Delivery? @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
+
+  @@index([targetType, targetId])
+  @@index([authorId])
+  @@map("reviews")
 }
 
 model DeliveryEvent {

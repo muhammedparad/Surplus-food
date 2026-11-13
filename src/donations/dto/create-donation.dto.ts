@@ -106,6 +106,53 @@ export class CreateDonationDto {
   allergenIds?: string[];
 
   @ApiPropertyOptional({
+    example: 'Global Climate Summit Banquet',
+    description: 'For events/catering: name of the wedding, conference, or corporate banquet',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  eventName?: string;
+
+  @ApiPropertyOptional({
+    example: 'CONFERENCE',
+    description: 'Event type (e.g. WEDDING, BANQUET, CONFERENCE, CORPORATE_EVENT)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  eventType?: string;
+
+  @ApiPropertyOptional({ example: 'David Miller', description: 'On-site venue coordinator' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  venueContactName?: string;
+
+  @ApiPropertyOptional({ example: '+1-555-0142', description: 'On-site venue phone' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  venueContactPhone?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'If uncollected by NGOs, allow general public / community table collection',
+  })
+  @IsOptional()
+  @IsBoolean()
+  allowPublicPickup?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'Community food table outside main hall gate B. Bring clean containers.',
+    description: 'Instructions for individual/public collection after NGO window',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  publicPickupInstructions?: string;
+
+  @ApiPropertyOptional({
     example: ['https://storage.example.com/photos/biryani-tray-1.jpg'],
     description: 'Photo URLs of the food trays / packaging',
   })

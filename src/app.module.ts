@@ -27,6 +27,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
 import { OrganizationsModule } from './organizations/organizations.module.js';
 import { PermissionsModule } from './permissions/permissions.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { ReviewsModule } from './reviews/reviews.module.js';
 import { RolesModule } from './roles/roles.module.js';
 import { SessionsModule } from './sessions/sessions.module.js';
 import { UsersModule } from './users/users.module.js';
@@ -87,6 +88,7 @@ import { VolunteersModule } from './volunteers/volunteers.module.js';
     DeliveriesModule,
     FoodRequestsModule,
     NotificationsModule,
+    ReviewsModule,
     AuthModule,
     HealthModule,
   ],

@@ -36,7 +36,7 @@ export class CreateOrganizationDto {
   @ApiPropertyOptional({
     enum: OrganizationType,
     example: OrganizationType.RESTAURANT,
-    description: 'Type of organization (RESTAURANT, NGO, BAKERY, CATERER)',
+    description: 'Type of organization (RESTAURANT, NGO, BAKERY, CATERER, EVENT_ORGANIZER)',
   })
   @IsOptional()
   @IsEnum(OrganizationType)

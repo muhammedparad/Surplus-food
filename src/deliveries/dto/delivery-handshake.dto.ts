@@ -38,3 +38,22 @@ export class ScanDeliveryDto {
   @Length(6, 6)
   code?: string;
 }
+
+export class ScanDirectHandoverDto {
+  @ApiPropertyOptional({
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'Optical QR token presented by food provider for direct 1-step NGO pickup',
+  })
+  @IsOptional()
+  @IsString()
+  qrToken?: string;
+
+  @ApiPropertyOptional({
+    example: '123456',
+    description: 'Fallback 6-digit numeric pickup code from food provider staff',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(6, 6)
+  code?: string;
+}

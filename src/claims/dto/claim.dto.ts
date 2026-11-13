@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsPositive, IsString, IsUUID, MaxLength } from 'class-validator';
+import { PickupMode } from '../../generated/prisma/enums.js';
 
 export class CreateClaimDto {
   @ApiProperty({
@@ -18,6 +19,17 @@ export class CreateClaimDto {
   @IsPositive()
   @Type(() => Number)
   requestedQuantity!: number;
+
+  @ApiPropertyOptional({
+    enum: PickupMode,
+    example: PickupMode.VOLUNTEER,
+    description:
+      'Pickup mode: VOLUNTEER (dispatched to volunteer pool) or DIRECT_NGO (NGO picks up directly from provider)',
+    default: PickupMode.VOLUNTEER,
+  })
+  @IsOptional()
+  @IsEnum(PickupMode)
+  pickupMode?: PickupMode = PickupMode.VOLUNTEER;
 }
 
 export class ApproveClaimDto {

@@ -21,6 +21,7 @@ import type { AuthenticatedUser } from '../common/interfaces/authenticated-user.
 import { DeliveriesService } from './deliveries.service.js';
 import {
   ScanDeliveryDto,
+  ScanDirectHandoverDto,
   ScanPickupDto,
 } from './dto/delivery-handshake.dto.js';
 
@@ -98,5 +99,22 @@ export class DeliveriesController {
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.deliveriesService.confirmDelivery(id, dto, actor);
+  }
+
+  @Post(':id/scan-direct-handover')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions('claim:create')
+  @ApiOperation({
+    summary: 'Direct 1-step NGO pickup: NGO representative scans restaurant QR token or enters 6-digit code on-site',
+  })
+  @ApiParam({ name: 'id', description: 'Delivery UUID' })
+  @ApiResponse({ status: 200, description: 'Direct handover confirmed. Delivery status updated to DELIVERED.' })
+  @ApiResponse({ status: 400, description: 'Verification failed or delivery not configured for direct NGO pickup' })
+  async confirmDirectHandover(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ScanDirectHandoverDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.deliveriesService.confirmDirectHandover(id, dto, actor);
   }
 }

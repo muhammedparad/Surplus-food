@@ -16,6 +16,7 @@ import {
   DeliveryStatus,
   DonationStatus,
   OrganizationType,
+  PickupMode,
   VerificationStatus,
 } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -153,6 +154,7 @@ export class ClaimsService {
         where: { id: existingClaim.id },
         data: {
           requestedQuantity: dto.requestedQuantity,
+          pickupMode: dto.pickupMode ?? PickupMode.VOLUNTEER,
           status: ClaimStatus.PENDING,
           requestedAt: new Date(),
           reviewedAt: null,
@@ -167,6 +169,7 @@ export class ClaimsService {
         donationId,
         ngoId: dto.ngoId,
         requestedQuantity: dto.requestedQuantity,
+        pickupMode: dto.pickupMode ?? PickupMode.VOLUNTEER,
         status: ClaimStatus.PENDING,
       },
       include: {
@@ -253,6 +256,7 @@ export class ClaimsService {
         data: {
           donationClaimId: claimId,
           status: DeliveryStatus.PENDING,
+          pickupMode: claim.pickupMode,
           pickupCodeHash,
           deliveryCodeHash,
           pickupQrToken,
@@ -261,7 +265,7 @@ export class ClaimsService {
             create: {
               actorId: actor.id,
               eventType: 'DELIVERY_CREATED',
-              description: `Delivery created for approved claim of ${approvedQuantity} ${claim.donation.unit}`,
+              description: `Delivery created for approved claim of ${approvedQuantity} ${claim.donation.unit} (${claim.pickupMode})`,
             },
           },
         },
@@ -278,6 +282,7 @@ export class ClaimsService {
             approvedQuantity,
             remainingAfterApproval,
             deliveryId: delivery.id,
+            pickupMode: claim.pickupMode,
           },
         },
         tx,
@@ -288,6 +293,7 @@ export class ClaimsService {
         delivery: {
           id: delivery.id,
           status: delivery.status,
+          pickupMode: delivery.pickupMode,
           pickupCode,
           pickupQrToken,
           deliveryCode,

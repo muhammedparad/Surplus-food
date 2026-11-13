@@ -23,7 +23,13 @@ CREATE TYPE "MembershipStatus" AS ENUM ('ACTIVE', 'SUSPENDED');
 CREATE TYPE "InvitationStatus" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED', 'REVOKED', 'EXPIRED');
 
 -- CreateEnum
-CREATE TYPE "OrganizationType" AS ENUM ('RESTAURANT', 'NGO', 'BAKERY', 'CATERER');
+CREATE TYPE "OrganizationType" AS ENUM ('RESTAURANT', 'NGO', 'BAKERY', 'CATERER', 'EVENT_ORGANIZER');
+
+-- CreateEnum
+CREATE TYPE "PickupMode" AS ENUM ('VOLUNTEER', 'DIRECT_NGO');
+
+-- CreateEnum
+CREATE TYPE "ReviewTargetType" AS ENUM ('ORGANIZATION', 'VOLUNTEER', 'DONATION');
 
 -- CreateEnum
 CREATE TYPE "VerificationStatus" AS ENUM ('PENDING', 'VERIFIED', 'REJECTED');
@@ -288,6 +294,12 @@ CREATE TABLE "donations" (
     "storage_type" "StorageType" NOT NULL,
     "pickup_point_id" UUID NOT NULL,
     "safety_declared" BOOLEAN NOT NULL DEFAULT false,
+    "event_name" TEXT,
+    "event_type" TEXT,
+    "venue_contact_name" TEXT,
+    "venue_contact_phone" TEXT,
+    "allow_public_pickup" BOOLEAN NOT NULL DEFAULT false,
+    "public_pickup_instructions" TEXT,
     "status" "DonationStatus" NOT NULL DEFAULT 'AVAILABLE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -342,6 +354,7 @@ CREATE TABLE "donation_claims" (
     "ngo_id" UUID NOT NULL,
     "requested_quantity" DECIMAL(10,2) NOT NULL,
     "approved_quantity" DECIMAL(10,2),
+    "pickup_mode" "PickupMode" NOT NULL DEFAULT 'VOLUNTEER',
     "status" "ClaimStatus" NOT NULL DEFAULT 'PENDING',
     "requested_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "reviewed_at" TIMESTAMP(3),
@@ -403,11 +416,28 @@ CREATE TABLE "deliveries" (
     "delivery_code_hash" TEXT,
     "pickup_qr_token" TEXT,
     "delivery_qr_token" TEXT,
+    "pickup_mode" "PickupMode" NOT NULL DEFAULT 'VOLUNTEER',
+    "direct_handover_at" TIMESTAMP(3),
     "failure_reason" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "deliveries_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "reviews" (
+    "id" UUID NOT NULL,
+    "author_id" UUID NOT NULL,
+    "target_type" "ReviewTargetType" NOT NULL,
+    "target_id" UUID NOT NULL,
+    "delivery_id" UUID,
+    "rating" SMALLINT NOT NULL,
+    "comment" TEXT,
+    "aspects" JSONB,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "reviews_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -751,6 +781,12 @@ CREATE INDEX "deliveries_volunteer_id_idx" ON "deliveries"("volunteer_id");
 CREATE INDEX "deliveries_status_idx" ON "deliveries"("status");
 
 -- CreateIndex
+CREATE INDEX "reviews_target_type_target_id_idx" ON "reviews"("target_type", "target_id");
+
+-- CreateIndex
+CREATE INDEX "reviews_author_id_idx" ON "reviews"("author_id");
+
+-- CreateIndex
 CREATE INDEX "delivery_events_delivery_id_idx" ON "delivery_events"("delivery_id");
 
 -- CreateIndex
@@ -944,6 +980,12 @@ ALTER TABLE "deliveries" ADD CONSTRAINT "deliveries_donation_claim_id_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "deliveries" ADD CONSTRAINT "deliveries_volunteer_id_fkey" FOREIGN KEY ("volunteer_id") REFERENCES "volunteer_profiles"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reviews" ADD CONSTRAINT "reviews_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reviews" ADD CONSTRAINT "reviews_delivery_id_fkey" FOREIGN KEY ("delivery_id") REFERENCES "deliveries"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "delivery_events" ADD CONSTRAINT "delivery_events_delivery_id_fkey" FOREIGN KEY ("delivery_id") REFERENCES "deliveries"("id") ON DELETE CASCADE ON UPDATE CASCADE;

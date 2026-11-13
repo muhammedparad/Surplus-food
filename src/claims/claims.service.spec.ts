@@ -41,7 +41,13 @@ describe('ClaimsService', () => {
         findMany: vi.fn(),
       },
       delivery: {
-        create: vi.fn().mockResolvedValue({ id: 'del-1', status: 'PENDING' }),
+        create: vi.fn().mockImplementation((args) =>
+          Promise.resolve({
+            id: 'del-1',
+            status: 'PENDING',
+            pickupMode: args.data.pickupMode ?? 'VOLUNTEER',
+          }),
+        ),
       },
       $transaction: vi.fn((callback) => callback(mockPrisma)),
     };
@@ -158,6 +164,7 @@ describe('ClaimsService', () => {
       id: 'claim-1',
       donationId: 'don-1',
       requestedQuantity: 30,
+      pickupMode: 'VOLUNTEER',
       status: ClaimStatus.PENDING,
       donation: {
         id: 'don-1',

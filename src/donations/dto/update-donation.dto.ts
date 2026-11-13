@@ -72,4 +72,39 @@ export class UpdateDonationDto {
   @IsOptional()
   @IsBoolean()
   safetyDeclared?: boolean;
+
+  @ApiPropertyOptional({ example: 'Global Climate Summit Banquet' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  eventName?: string;
+
+  @ApiPropertyOptional({ example: 'CONFERENCE' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  eventType?: string;
+
+  @ApiPropertyOptional({ example: 'David Miller' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  venueContactName?: string;
+
+  @ApiPropertyOptional({ example: '+1-555-0142' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  venueContactPhone?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  allowPublicPickup?: boolean;
+
+  @ApiPropertyOptional({ example: 'Community food table outside main hall gate B' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  publicPickupInstructions?: string;
 }

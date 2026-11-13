@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsUUID } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import {
   DonationStatus,
@@ -33,4 +34,16 @@ export class QueryDonationsDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID('4')
   organizationId?: string;
+
+  @ApiPropertyOptional({ description: 'Filter for items permitting direct public beneficiary pickup' })
+  @Transform(({ value }) => (value !== undefined ? value === 'true' || value === true : undefined))
+  @IsOptional()
+  @IsBoolean()
+  allowPublicPickup?: boolean;
+
+  @ApiPropertyOptional({ description: 'Filter by event type (e.g. WEDDING, CONFERENCE)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  eventType?: string;
 }

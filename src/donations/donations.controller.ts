@@ -46,8 +46,10 @@ export class DonationsController {
   }
 
   @Get()
-  @RequirePermissions('donation:read')
-  @ApiOperation({ summary: 'List and filter available food donations with remaining quantities' })
+  @Public()
+  @ApiOperation({
+    summary: 'List and filter available food donations with remaining quantities (Public for general community & NGOs)',
+  })
   @ApiResponse({ status: 200, description: 'Paginated list of available donations' })
   async listDonations(@Query() query: QueryDonationsDto) {
     return this.donationsService.listDonations(query);
@@ -61,7 +63,7 @@ export class DonationsController {
   }
 
   @Get(':id')
-  @RequirePermissions('donation:read')
+  @Public()
   @ApiOperation({ summary: 'Get details of a specific donation, remaining quantity, and allergens' })
   @ApiParam({ name: 'id', description: 'Donation UUID' })
   @ApiResponse({ status: 200, description: 'Donation details' })

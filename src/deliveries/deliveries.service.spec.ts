@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DeliveryStatus, VerificationStatus } from '../generated/prisma/enums.js';
+import { DeliveryStatus, PickupMode, VerificationStatus } from '../generated/prisma/enums.js';
 import { DeliveriesService } from './deliveries.service.js';
 
 describe('DeliveriesService', () => {
@@ -8,6 +8,7 @@ describe('DeliveriesService', () => {
   let mockPrisma: any;
   let mockAudit: any;
   let mockCrypto: any;
+  let mockAuthLookup: any;
 
   const mockActor: any = {
     id: 'user-alex',
@@ -33,6 +34,9 @@ describe('DeliveriesService', () => {
         findMany: vi.fn(),
         update: vi.fn(),
       },
+      organizationMember: {
+        findUnique: vi.fn(),
+      },
       donationClaim: {
         update: vi.fn(),
       },
@@ -47,7 +51,14 @@ describe('DeliveriesService', () => {
       sha256: vi.fn((val) => `hash_${val}`),
     };
 
-    service = new DeliveriesService(mockPrisma, mockAudit, mockCrypto);
+    mockAuthLookup = {
+      getGlobalRolesAndPermissions: vi.fn().mockResolvedValue({
+        roleSlugs: ['customer'],
+        permissionKeys: ['delivery:accept'],
+      }),
+    };
+
+    service = new DeliveriesService(mockPrisma, mockAudit, mockCrypto, mockAuthLookup);
   });
 
   it('blocks unverified volunteers from claiming delivery tasks', async () => {
@@ -86,6 +97,7 @@ describe('DeliveriesService', () => {
       id: 'del-1',
       status: DeliveryStatus.PENDING,
       volunteerId: null,
+      pickupMode: PickupMode.VOLUNTEER,
       donationClaim: { donationId: 'don-1' },
     });
     mockPrisma.delivery.update.mockResolvedValue({
@@ -188,5 +200,66 @@ describe('DeliveriesService', () => {
       where: { id: 'claim-1' },
       data: { status: 'COMPLETED' },
     });
+  });
+
+  it('rejects volunteer acceptance if delivery mode is DIRECT_NGO', async () => {
+    mockPrisma.volunteerProfile.findUnique.mockResolvedValue(mockVolunteerProfile);
+    mockPrisma.delivery.findFirst.mockResolvedValue(null);
+    mockPrisma.delivery.findUnique.mockResolvedValue({
+      id: 'del-direct',
+      status: DeliveryStatus.PENDING,
+      volunteerId: null,
+      pickupMode: PickupMode.DIRECT_NGO, // Not for volunteers!
+      donationClaim: { donationId: 'don-1' },
+    });
+
+    await expect(service.acceptDelivery('del-direct', mockActor)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('completes 1-step direct NGO pickup when NGO member scans restaurant QR code', async () => {
+    const mockNgoUser = { id: 'user-sarah', name: 'Sarah NGO Lead' };
+    mockPrisma.delivery.findUnique.mockResolvedValue({
+      id: 'del-direct-1',
+      status: DeliveryStatus.PENDING,
+      pickupMode: PickupMode.DIRECT_NGO,
+      pickupQrToken: 'provider-qr-999',
+      pickupCodeHash: 'hash_555444',
+      donationClaim: {
+        id: 'claim-10',
+        ngoId: 'ngo-org-1',
+        donationId: 'don-10',
+      },
+    });
+
+    mockPrisma.organizationMember.findUnique.mockResolvedValue({
+      organizationId: 'ngo-org-1',
+      userId: mockNgoUser.id,
+      status: 'ACTIVE',
+    });
+
+    mockPrisma.delivery.update.mockResolvedValue({
+      id: 'del-direct-1',
+      status: DeliveryStatus.DELIVERED,
+      pickupMode: PickupMode.DIRECT_NGO,
+    });
+
+    const result = await service.confirmDirectHandover(
+      'del-direct-1',
+      { qrToken: 'provider-qr-999' },
+      mockNgoUser as any,
+    );
+
+    expect(result.status).toBe(DeliveryStatus.DELIVERED);
+    expect(mockPrisma.delivery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'del-direct-1' },
+        data: expect.objectContaining({
+          status: DeliveryStatus.DELIVERED,
+        }),
+      }),
+    );
+    expect(mockAudit.record).toHaveBeenCalled();
   });
 });
